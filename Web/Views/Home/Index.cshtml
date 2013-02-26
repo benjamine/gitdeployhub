@@ -1,0 +1,207 @@
+﻿@model Hub
+
+@{
+    ViewBag.Title = "Git Deploy Hub";
+}
+
+<h1>@ViewBag.Title</h1>
+
+<div>
+    <h2>Active</h2>
+    @if (Model.DeploymentQueue.Count == 0)
+    {
+        <summary>Empty</summary>
+    }
+    else
+    {
+                    
+        <table>
+            <thead>
+                <tr>
+                    <th>Instance</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Parameters</th>
+                    <th>Log</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                @foreach (var deployment in Model.DeploymentQueue.Reverse())
+                {
+                    <tr class="@(deployment.Succeeded ? "succeeded" : "failed")">
+                        <td>@deployment.Instance.Name</td>
+                        <td>@deployment.Status</td>
+                        <td>@deployment.Started.ToString("s") (@DateTimeFormatter.TimeAgo(deployment.Started))</td>
+                        <td>
+                            <ul>
+                                @foreach (var param in deployment.Parameters)
+                                {
+                                    <li>
+                                        <pre>@param.Key: @param.Value</pre>
+                                    </li>
+                                }
+                            </ul>
+                        </td>
+                        <td>
+                            <pre>@deployment.Log</pre>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+
+    <h2>Instances</h2>
+    @if (Model.Instances.Count() == 0)
+    {
+        <div>Empty</div>
+    }
+    else
+    {
+                    
+        <table>
+            <thead>
+                <tr>
+                    <th>Instance</th>
+                    <th>Status</th>
+                    <th>Completed</th>
+                    <th>Parameters</th>
+                    <th>Result</th>
+                    <th>Log</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var instance in Model.Instances.OrderBy(i => i.Name))
+                {
+                    <tr class="@(instance.LastDeployment != null ? (instance.LastDeployment.Succeeded ? "succeeded" : "failed") : "unknown")">
+                        <td>@instance.Name</td>
+                        @if (instance.LastDeployment != null)
+                        {
+                            <td>@instance.LastDeployment.Status</td>
+                            <td>@instance.LastDeployment.Completed.ToString("s")  (@DateTimeFormatter.TimeAgo(instance.LastDeployment.Completed))</td>
+                            <td>
+                                <ul>
+                                    @foreach (var param in instance.LastDeployment.Parameters)
+                                    {
+                                        <li>
+                                            <pre>@param.Key: @param.Value</pre>
+                                        </li>
+                                    }
+                                </ul>
+                            </td>
+                            <td>
+                                <pre>@(instance.LastDeployment.Succeeded ? "OK" : "ERROR: " + instance.LastDeployment.Exception.Message)</pre>
+                            </td>
+                            <td>
+                                <pre>@instance.LastDeployment.Log</pre>
+                            </td>
+                        }
+                        else
+                        {
+                            <td colspan="2">No requests received yet</td>
+                            <td colspan="3">Http POST to:<pre>@Url.RouteUrl("DefaultApi", new { httproute = "", controller = "Deployments", id = instance.Name }, "http")</pre>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <h2>Recent Deployments</h2>
+    @if (Model.DeploymentHistory.Count == 0)
+    {
+        <div>Empty</div>
+    }
+    else
+    {
+                    
+        <table>
+            <thead>
+                <tr>
+                    <th>Instance</th>
+                    <th>Status</th>
+                    <th>Completed</th>
+                    <th>Parameters</th>
+                    <th>Result</th>
+                    <th>Log</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var deployment in Model.DeploymentHistory.Reverse())
+                {
+                    <tr class="@(deployment.Succeeded ? "succeeded" : "failed")">
+                        <td>@deployment.Instance.Name</td>
+                        <td>@deployment.Status</td>
+                        <td>@deployment.Completed.ToString("s") (@DateTimeFormatter.TimeAgo(deployment.Completed))</td>
+                        <td>
+                            <ul>
+                                @foreach (var param in deployment.Parameters)
+                                {
+                                    <li>
+                                        <pre>@param.Key: @param.Value</pre>
+                                    </li>
+                                }
+                            </ul>
+                        </td>
+                        <td>
+                            <pre>@(deployment.Succeeded ? "OK" : "ERROR: " + deployment.Exception.Message)</pre>
+                        </td>
+                        <td>
+                            <pre>@deployment.Log</pre>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+    <br />
+    <br />
+    <hr />
+    <br />
+    <h2>Instructions</h2>
+    <div>
+        1. Clone your website:
+        <pre><code>
+    cd c:\InetPub\wwwrooot
+    git clone &lt;url&gt; MyWebSite
+</code></pre>
+        (and publish it on IIS)
+    </div>
+    <div>
+        2. On your web.config:
+        <pre><code>
+    &lt;!-- allow deployments to be requested from localhost, and from github webhook servers --&gt;
+    &lt;gitDeployHub allowedAddresses="192.168.*.*;127.0.0.1;::1; 207.97.227.253, 50.57.128.197, 108.171.174.178, 50.57.231.61, 54.235.183.49, 54.235.183.23, 54.235.118.251, 54.235.120.57, 54.235.120.61, 54.235.120.62"&gt;
+        &lt;instances&gt;
+            &lt;!-- folder is optional if location is ~\..\&lt;name&gt; --&gt;
+            &lt;instance name="MyWebsite" folder="c:\InetPub\wwwroot\Path\To\MyWebsite" /&gt;
+            &lt;instance name="AnotherWebsite" /&gt;
+        &lt;/instances&gt;
+    &lt;/gitDeployHub&gt;
+</code></pre>
+    </div>
+    <div>
+        3. Setup your hook to send an http POST to:<br />
+        <pre>
+    /api/deployments/instance-name?source=source-name
+</pre>
+        For example, if you want to pull from a github repo go to Settings / Service Hooks / WebHook URLs,<br />
+        and add:
+        <pre>
+    @Url.RouteUrl("DefaultApi", new { httproute = "", controller = "Deployments", id = "MyWebsite", source = "github" }, "http")
+</pre>
+        (you can use query parameters to keep track of the request source)
+    </div>
+    <div>
+        4. Ready! (Test it and hit F5 until you see something on this page)
+    </div>
+
+    <script>
+        setTimeout(function () {
+            document.location = document.location.href;
+        }, 30000);
+    </script>
+</div>
