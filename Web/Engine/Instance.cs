@@ -123,7 +123,7 @@ namespace GitDeployHub.Web.Engine
                 }
                 else
                 {
-                    Folder = Path.GetFullPath(Path.Combine(MappedApplicationPath, Path.Combine("..", name)));
+                    Folder = Path.GetFullPath(Path.Combine(MappedApplicationPath, Path.Combine("../../", name)));
                 }
             }
         }
