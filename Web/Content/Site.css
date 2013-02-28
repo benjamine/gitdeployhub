@@ -79,3 +79,7 @@ tr:nth-child(even) {
 tr.failed {
     background-color: #e88;
 }
+
+.instructions div {
+    padding: 20px;
+}

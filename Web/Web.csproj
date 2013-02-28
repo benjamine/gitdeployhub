@@ -111,7 +111,7 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
-    <Compile Include="Controllers\DeploymentsController.cs" />
+    <Compile Include="Controllers\DeploymentController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Engine\Config\GitDeployHub.cs" />
     <Compile Include="Engine\Config\InstanceCollection.cs" />

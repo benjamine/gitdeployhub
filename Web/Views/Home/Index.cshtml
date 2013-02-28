@@ -65,7 +65,8 @@
             <thead>
                 <tr>
                     <th>Instance</th>
-                    <th>Status</th>
+                    <th></th>
+                    <th>Tags</th>
                     <th>Completed</th>
                     <th>Parameters</th>
                     <th>Result</th>
@@ -77,9 +78,21 @@
                 {
                     <tr class="@(instance.LastDeployment != null ? (instance.LastDeployment.Succeeded ? "succeeded" : "failed") : "unknown")">
                         <td>@instance.Name</td>
+                        <td>
+                            <form method="POST" action="@Url.Action("Start", "Deployment", new { id = instance.Name, source = "dashboard" })">
+                                <input type="submit" value="Deploy Now" />
+                            </form>
+                        </td>
+                        <td>
+                            <ul>
+                                @foreach (var tag in instance.Tags)
+                                {
+                                    <li>@tag</li>
+                                }
+                            </ul>
+                        </td>
                         @if (instance.LastDeployment != null)
                         {
-                            <td>@instance.LastDeployment.Status</td>
                             <td>@instance.LastDeployment.Completed.ToString("s")  (@DateTimeFormatter.TimeAgo(instance.LastDeployment.Completed))</td>
                             <td>
                                 <ul>
@@ -100,8 +113,8 @@
                         }
                         else
                         {
-                            <td colspan="2">No requests received yet</td>
-                            <td colspan="3">Http POST to:<pre>@Url.RouteUrl("DefaultApi", new { httproute = "", controller = "Deployments", id = instance.Name }, "http")</pre>
+                            <td colspan="2">No recent deployments</td>
+                            <td colspan="3">Http POST to:<pre>@Url.Action("Start", "Deployment", new { id = instance.Name, source = "sourceName" }, "http")</pre>
                             </td>
                         }
                     </tr>
@@ -162,16 +175,18 @@
     <hr />
     <br />
     <h2>Instructions</h2>
-    <div>
-        1. Clone your website:
+    <div class="instructions">
+
+        <div>
+            1. Clone your website:
         <pre><code>
     cd c:\InetPub\wwwrooot
     git clone &lt;url&gt; MyWebSite
 </code></pre>
-        (and publish it on IIS)
-    </div>
-    <div>
-        2. On your web.config:
+            (and publish it on IIS)
+        </div>
+        <div>
+            2. On your web.config:
         <pre><code>
     &lt;!-- allow deployments to be requested from localhost, and from github webhook servers --&gt;
     &lt;gitDeployHub allowedAddresses="192.168.*.*;127.0.0.1;::1; 207.97.227.253, 50.57.128.197, 108.171.174.178, 50.57.231.61, 54.235.183.49, 54.235.183.23, 54.235.118.251, 54.235.120.57, 54.235.120.61, 54.235.120.62"&gt;
@@ -182,21 +197,22 @@
         &lt;/instances&gt;
     &lt;/gitDeployHub&gt;
 </code></pre>
-    </div>
-    <div>
-        3. Setup your hook to send an http POST to:<br />
-        <pre>
+        </div>
+        <div>
+            3. Setup your hook to send an http POST to:<br />
+            <pre>
     /api/deployments/instance-name?source=source-name
 </pre>
-        For example, if you want to pull from a github repo go to Settings / Service Hooks / WebHook URLs,<br />
-        and add:
-        <pre>
-    @Url.RouteUrl("DefaultApi", new { httproute = "", controller = "Deployments", id = "MyWebsite", source = "github" }, "http")
+            For example, if you want to pull from a github repo go to Settings / Service Hooks / WebHook URLs,<br />
+            and add:
+            <pre>
+    @Url.Action("Start", "Deployment", new { id = "MyWebsite", source = "github" }, "http")
 </pre>
-        (you can use query parameters to keep track of the request source)
-    </div>
-    <div>
-        4. Ready! (Test it and hit F5 until you see something on this page)
+            (you can use query parameters to keep track of the request source)
+        </div>
+        <div>
+            4. Ready! (Push and refresh this page until see the deployment)
+        </div>
     </div>
 
     <script>

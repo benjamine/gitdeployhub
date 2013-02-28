@@ -28,7 +28,7 @@ namespace GitDeployHub.Web.Engine
         {
             foreach (var instanceConfig in Config.GitDeployHub.Settings.Instances.OfType<InstanceElement>())
             {
-                var instance = new Instance(instanceConfig.Name, instanceConfig.Folder);
+                var instance = new Instance(this, instanceConfig.Name, instanceConfig.Folder);
                 Register(instance);
             }
         }
@@ -73,20 +73,14 @@ namespace GitDeployHub.Web.Engine
             }
         }
 
-        public Deployment CreateDeployment(string instanceName, IDictionary<string,string> parameters = null)
+        public Instance GetInstance(string name)
         {
             Instance instance;
-            if (!_instances.TryGetValue(instanceName, out instance))
+            if (!_instances.TryGetValue(name, out instance))
             {
-                throw new Exception("Instance not found: " + instanceName);
+                throw new Exception("Instance not found: " + name);
             }
-            var deployment = new Deployment(this, _instances[instanceName])
-                {
-                    Parameters = parameters
-                };
-            DeploymentQueue.Add(deployment);
-            return deployment;
+            return instance;
         }
-
     }
 }

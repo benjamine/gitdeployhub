@@ -12,7 +12,7 @@
 [Rr]elease/
 x64/
 build/
-[Bb]in/
+# [Bb]in/ # include binaries for this project
 [Oo]bj/
 
 # MSTest test Results

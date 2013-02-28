@@ -46,14 +46,20 @@ namespace GitDeployHub.Web.Engine
 
         public string ExceptionStackTrace
         {
-            get { return Exception.ToString(); }
+            get { return Exception == null ? "" : Exception.ToString(); }
         }
 
         public bool Succeeded { get { return Exception == null; } }
 
+        public string Tags { get; private set; }
+
         private StringBuilder _log = new StringBuilder();
 
         public string Log { get { return _log.ToString(); } }
+
+        public Task CurrentTask { get; private set; }
+
+        private object syncRoot = new object();
 
         public Deployment(Hub hub, Instance instance)
         {
@@ -62,7 +68,7 @@ namespace GitDeployHub.Web.Engine
             Created = DateTime.UtcNow;
         }
 
-        public bool IsAllowed(HttpContext context)
+        public bool IsAllowed(HttpContextBase context)
         {
             var allowedAddresses = Config.GitDeployHub.Settings.AllowedAddresses ?? "";
             if (string.IsNullOrWhiteSpace(allowedAddresses) || allowedAddresses.ToLowerInvariant() == "none")
@@ -95,10 +101,26 @@ namespace GitDeployHub.Web.Engine
             return allowed;
         }
 
-        public void Execute()
+        private void Execute()
         {
+            bool pullNeeded = true;
+
             try
             {
+                while (Instance.CurrentDeployment != this)
+                {
+                    lock (syncRoot)
+                    {
+                        if (Instance.CurrentDeployment == null)
+                        {
+                            Instance.CurrentDeployment = this;
+                            break;
+                        }
+                    }
+                    _log.AppendLine("Waiting for current deployment to finish");
+                    Instance.CurrentDeployment.CurrentTask.Wait();
+                }
+
                 Started = DateTime.UtcNow;
                 if (Status != DeploymentStatus.Pending)
                 {
@@ -107,28 +129,29 @@ namespace GitDeployHub.Web.Engine
                 _log.AppendFormat("Started ({0})", Started.ToString("s"));
                 _log.AppendLine();
                 Status = DeploymentStatus.InProgress;
-                if (!Directory.Exists(Path.Combine(Instance.Folder, ".git")))
+                if (!Instance.HasFolder(".git"))
                 {
                     throw new Exception("The specified folder is not a git repository workspace: " + Instance.Folder);
                 }
 
-                // TO-DO: execute pre-deploy tasks (allow validations)
+                bool isBehind, canFastForward;
+                Instance.Fetch(_log);
+                Instance.Status(_log, out isBehind, out canFastForward);
 
-                _log.AppendLine("running git pull");
-                var process = Process.Start(new ProcessStartInfo("git", "pull")
-                    {
-                        UseShellExecute = false,
-                        WorkingDirectory = Instance.Folder,
-                        RedirectStandardOutput = true
-                    });
-                process.WaitForExit();
-                _log.Append(process.StandardOutput.ReadToEnd());
-                if (process.ExitCode != 0)
+                pullNeeded = isBehind;
+                if (pullNeeded)
                 {
-                    throw new Exception("git pull failed with exit code: " + process.ExitCode);
-                }
+                    if (!canFastForward)
+                    {
+                        throw new Exception("There are changes, but I can't fast-forward!");
+                    }
 
-                // TO-DO: execute post-deploy tasks
+                    Instance.ExecutePreDeploy(_log);
+
+                    Instance.Pull(_log);
+
+                    Instance.ExecutePostDeploy(_log);
+                }
             }
             catch (Exception ex)
             {
@@ -140,31 +163,36 @@ namespace GitDeployHub.Web.Engine
                 Completed = DateTime.UtcNow;
                 _log.AppendFormat("Completed ({0})", Completed - Started);
                 Status = DeploymentStatus.Complete;
-                Hub.DeploymentHistory.Add(this);
+                if (pullNeeded || Instance.LastDeployment == null)
+                {
+                    Instance.LastDeployment = this;
+                    Hub.DeploymentHistory.Add(this);
+                    while (Hub.DeploymentHistory.Count > 50 || DateTime.UtcNow.Subtract(Hub.DeploymentHistory[0].Completed).TotalDays > 14)
+                    {
+                        Hub.DeploymentHistory.RemoveAt(0);
+                    }
+                    try
+                    {
+                        var serializer = new JavaScriptSerializer();
+                        var json = serializer.Serialize(this);
+                        File.AppendAllText(Path.Combine(Instance.MappedApplicationPath, "history.log"),
+                                           json + Environment.NewLine);
+                    }
+                    catch
+                    {
+                        // failed to log
+                    }
+                }
                 Hub.DeploymentQueue.Remove(this);
-                Instance.LastDeployment = this;
-                while (Hub.DeploymentHistory.Count > 50 || DateTime.UtcNow.Subtract(Hub.DeploymentHistory[0].Completed).TotalDays > 14)
-                {
-                    Hub.DeploymentHistory.RemoveAt(0);
-                }
-                try
-                {
-                    var serializer = new JavaScriptSerializer();
-                    var json = serializer.Serialize(this);
-                    File.AppendAllText(Path.Combine(Instance.MappedApplicationPath, "history.log"),
-                                       json + Environment.NewLine);
-                }
-                catch
-                {
-                    // failed to log
-                }
+                Instance.CurrentDeployment = null;
             }
 
         }
 
         public Task ExecuteAsync()
         {
-            return Task.Factory.StartNew(Execute);
+            return CurrentTask = Task.Factory.StartNew(Execute);
         }
+
     }
 }
