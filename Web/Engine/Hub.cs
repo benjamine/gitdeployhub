@@ -29,6 +29,20 @@ namespace GitDeployHub.Web.Engine
             foreach (var instanceConfig in Config.GitDeployHub.Settings.Instances.OfType<InstanceElement>())
             {
                 var instance = new Instance(this, instanceConfig.Name, instanceConfig.Folder);
+                if (!string.IsNullOrWhiteSpace(instanceConfig.EnvironmentVariables))
+                {
+                    foreach (var pair in instanceConfig.EnvironmentVariables
+                        .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var equalsIndex = pair.IndexOf('=');
+                        if (equalsIndex >= 0)
+                        {
+                            var name = pair.Substring(0, equalsIndex).Trim();
+                            var value = pair.Substring(equalsIndex + 1).Trim();
+                            instance.EnvironmentVariables[name] = value;
+                        }
+                    }
+                }
                 Register(instance);
             }
         }

@@ -14,6 +14,8 @@ namespace GitDeployHub.Web.Engine
 
         public string Folder { get; set; }
 
+        public IDictionary<string, string> EnvironmentVariables { get; set; }
+
         private static string _mappedApplicationPath;
 
         public static string MappedApplicationPath
@@ -102,6 +104,7 @@ namespace GitDeployHub.Web.Engine
             Hub = hub;
             Name = name;
             Folder = folder;
+            EnvironmentVariables = new Dictionary<string, string>();
             if (string.IsNullOrWhiteSpace(Folder))
             {
                 if (Name == "_self")
@@ -153,6 +156,13 @@ namespace GitDeployHub.Web.Engine
                     RedirectStandardError = true,
                     WindowStyle = ProcessWindowStyle.Hidden
                 };
+            if (EnvironmentVariables != null)
+            {
+                foreach (var envVar in EnvironmentVariables)
+                {
+                    processStartInfo.EnvironmentVariables[envVar.Key] = envVar.Value;
+                }
+            }
             if (!string.IsNullOrWhiteSpace(arguments))
             {
                 processStartInfo.Arguments = arguments;
@@ -212,13 +222,13 @@ namespace GitDeployHub.Web.Engine
 
         public void ExecutePreDeploy(StringBuilder output)
         {
-            string fileName = "Build\\PreDeploy.ps1";
+            string fileName = "BuildScripts\\PreDeploy.ps1";
             ExecuteIfExists(fileName, "powershell", fileName, output);
         }
 
         public void ExecutePostDeploy(StringBuilder output)
         {
-            string fileName = "Build\\PostDeploy.ps1";
+            string fileName = "BuildScripts\\PostDeploy.ps1";
             ExecuteIfExists(fileName, "powershell", fileName, output);
         }
     }

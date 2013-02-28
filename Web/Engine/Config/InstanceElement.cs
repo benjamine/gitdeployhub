@@ -21,5 +21,12 @@ namespace GitDeployHub.Web.Engine.Config
             get { return this["folder"] as string; }
             set { this["folder"] = value; }
         }
+
+        [ConfigurationProperty("environmentVariables")]
+        public string EnvironmentVariables
+        {
+            get { return this["environmentVariables"] as string; }
+            set { this["environmentVariables"] = value; }
+        }
     }
 }
