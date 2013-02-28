@@ -72,6 +72,11 @@ td {
     border: none;
 }
 
+pre {
+    max-height: 100px;
+    overflow: auto;
+}
+
 tr:nth-child(even) {
     background-color: #eee;
 }
