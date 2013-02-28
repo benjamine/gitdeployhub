@@ -62,7 +62,7 @@ namespace GitDeployHub.Web.Engine
                         var output = new StringBuilder();
                         if (!HasFolder(".git"))
                         {
-                            _tags = new[] {"<not-a-git-repo>"};
+                            _tags = new[] { "<not-a-git-repo>" };
                         }
                         else
                         {
@@ -74,7 +74,7 @@ namespace GitDeployHub.Web.Engine
                     }
                     catch
                     {
-                        _tags = new[] {"<error-getting-tags>"};
+                        _tags = new[] { "<error-getting-tags>" };
                     }
                 }
                 return _tags;
@@ -104,7 +104,27 @@ namespace GitDeployHub.Web.Engine
             Folder = folder;
             if (string.IsNullOrWhiteSpace(Folder))
             {
-                Folder = Path.GetFullPath(Path.Combine(MappedApplicationPath, Path.Combine("..", name)));
+                if (Name == "_self")
+                {
+                    Folder = Path.GetFullPath(Path.Combine(MappedApplicationPath));
+                    if (!HasFile(".git"))
+                    {
+                        var gitFolder = Folder;
+                        while (!string.IsNullOrEmpty(gitFolder))
+                        {
+                            gitFolder = Directory.GetParent(gitFolder).FullName;
+                            if (Directory.Exists(Path.Combine(gitFolder, ".git")))
+                            {
+                                Folder = gitFolder;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Folder = Path.GetFullPath(Path.Combine(MappedApplicationPath, Path.Combine("..", name)));
+                }
             }
         }
 

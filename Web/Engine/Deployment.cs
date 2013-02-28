@@ -152,6 +152,10 @@ namespace GitDeployHub.Web.Engine
 
                     Instance.ExecutePostDeploy(_log);
                 }
+                else
+                {
+                    _log.AppendLine("Skipping deployment.");
+                }
             }
             catch (Exception ex)
             {
