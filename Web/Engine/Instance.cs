@@ -212,13 +212,13 @@ namespace GitDeployHub.Web.Engine
 
         public void ExecutePreDeploy(StringBuilder output)
         {
-            string fileName = "build/predeploy.sh1";
+            string fileName = "Build\\PreDeploy.ps1";
             ExecuteIfExists(fileName, "powershell", fileName, output);
         }
 
         public void ExecutePostDeploy(StringBuilder output)
         {
-            string fileName = "build/postdeploy.sh1";
+            string fileName = "Build\\PostDeploy.ps1";
             ExecuteIfExists(fileName, "powershell", fileName, output);
         }
     }
