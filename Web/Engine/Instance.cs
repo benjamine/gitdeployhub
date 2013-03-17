@@ -211,6 +211,7 @@ namespace GitDeployHub.Web.Engine
         {
             ExecuteProcess("git", "fetch", log);
             ExecuteProcess("git", "status -uno", log);
+            _tags = null;
             _filesChangedToTreeish = null;
         }
 
