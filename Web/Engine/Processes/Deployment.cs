@@ -19,6 +19,7 @@ namespace GitDeployHub.Web.Engine.Processes
                 if (!Dry)
                 {
                     Instance.ExecutePreDeploy(this);
+                    Instance.Stash(this);
                     Instance.Checkout(Instance.Treeish, this);
                     Instance.ExecutePostDeploy(this);
                     LogNewLine();

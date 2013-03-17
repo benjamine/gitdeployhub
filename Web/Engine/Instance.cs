@@ -246,6 +246,11 @@ namespace GitDeployHub.Web.Engine
             _filesChangedToTreeish = null;
         }
 
+        public void Stash(ILog log)
+        {
+            ExecuteProcess("git", "stash", log);
+        }
+
         public void Checkout(string branchOrTag, ILog log)
         {
             ExecuteProcess("git", "checkout " + branchOrTag, log);
