@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web;
+using GitDeployHub.Web.Engine.Processes;
 
 namespace GitDeployHub.Web.Engine
 {
@@ -15,6 +16,8 @@ namespace GitDeployHub.Web.Engine
         public string Folder { get; set; }
 
         public IDictionary<string, string> EnvironmentVariables { get; set; }
+
+        public string Treeish { get; set; }
 
         private static string _mappedApplicationPath;
 
@@ -48,6 +51,8 @@ namespace GitDeployHub.Web.Engine
 
         public Deployment CurrentDeployment { get; set; }
 
+        public Process CurrentProcess { get; set; }
+
         public Hub Hub { get; set; }
 
         private string[] _tags;
@@ -60,16 +65,15 @@ namespace GitDeployHub.Web.Engine
                 {
                     try
                     {
-
-                        var output = new StringBuilder();
+                        var log = new StringLog();
                         if (!HasFolder(".git"))
                         {
                             _tags = new[] { "<not-a-git-repo>" };
                         }
                         else
                         {
-                            ExecuteProcess("git", "tag --contains HEAD", output, false);
-                            _tags = output.ToString().Split(new[] { '\r', '\n' })
+                            ExecuteProcess("git", "tag --contains HEAD", log, false);
+                            _tags = log.Output.Split(new[] { '\r', '\n' })
                                           .Select(tag => tag.Trim())
                                           .Where(tag => tag.Length > 0).ToArray();
                         }
@@ -83,6 +87,21 @@ namespace GitDeployHub.Web.Engine
             }
         }
 
+        private string[] _filesChangedToTreeish;
+
+        public string[] FilesChangedToTreeish
+        {
+            get
+            {
+                if (_filesChangedToTreeish == null)
+                {
+                    var log = new StringLog();
+                    Diff(log, Treeish, out _filesChangedToTreeish, false);
+                }
+                return _filesChangedToTreeish;
+            }
+        }
+
         private string _trackedBranch;
 
         public string TrackedBranch
@@ -91,25 +110,26 @@ namespace GitDeployHub.Web.Engine
             {
                 if (_trackedBranch == null)
                 {
-                    var output = new StringBuilder();
-                    ExecuteProcess("git", "for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD)", output, false);
-                    _trackedBranch = output.ToString().Trim(new[] { ' ', '\t', '\r', '\n' });
+                    var log = new StringLog();
+                    ExecuteProcess("git", "for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD)", log, false);
+                    _trackedBranch = log.Output.Trim(new[] { ' ', '\t', '\r', '\n' });
                 }
                 return _trackedBranch;
             }
         }
 
-        public Instance(Hub hub, string name, string folder = null)
+        public Instance(Hub hub, string name, string treeish = null, string folder = null)
         {
             Hub = hub;
             Name = name;
+            Treeish = treeish;
             Folder = folder;
             EnvironmentVariables = new Dictionary<string, string>();
             if (string.IsNullOrWhiteSpace(Folder))
             {
                 if (Name == "_self")
                 {
-                    Folder = Path.GetFullPath(Path.Combine(MappedApplicationPath));
+                    Folder = Path.GetFullPath(MappedApplicationPath);
                     if (!HasFile(".git"))
                     {
                         var gitFolder = Folder;
@@ -137,17 +157,16 @@ namespace GitDeployHub.Web.Engine
             {
                 Parameters = parameters
             };
-            Hub.DeploymentQueue.Add(deployment);
+            Hub.Queue.Add(deployment);
             return deployment;
         }
 
-        public void ExecuteProcess(string command, string arguments, StringBuilder output, bool echo = true)
+        public void ExecuteProcess(string command, string arguments, ILog log, bool echo = true)
         {
             if (echo)
             {
-                output.AppendFormat(" & {0} {1}", command, arguments ?? "");
+                log.Log(string.Format(" & {0} {1}", command, arguments ?? ""));
             }
-            output.AppendLine();
             var processStartInfo = new ProcessStartInfo(command)
                 {
                     UseShellExecute = false,
@@ -167,36 +186,70 @@ namespace GitDeployHub.Web.Engine
             {
                 processStartInfo.Arguments = arguments;
             }
-            var process = Process.Start(processStartInfo);
-            process.WaitForExit();
-            var stdout = process.StandardOutput.ReadToEnd();
-            var stderr = process.StandardError.ReadToEnd();
-            output.Append(stdout);
-            output.Append(stderr);
+
+            var process = new System.Diagnostics.Process
+                {
+                    StartInfo = processStartInfo
+                };
+            process.OutputDataReceived += (sender, args) => log.Log(args.Data);
+            process.ErrorDataReceived += (sender, args) => log.Log(args.Data);
+            process.Start();
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+            var exited = process.WaitForExit((int)TimeSpan.FromMinutes(15).TotalMilliseconds);
+            if (!exited)
+            {
+                throw new Exception(string.Format("{0} {1} timed out.", command, arguments));
+            }
             if (process.ExitCode != 0)
             {
                 throw new Exception(string.Format("{0} {1} failed with exit code: {2}", command, arguments, process.ExitCode));
             }
         }
 
-        public void Fetch(StringBuilder output)
+        public void Fetch(ILog log)
         {
-            ExecuteProcess("git", "fetch", output);
+            ExecuteProcess("git", "fetch", log);
+            ExecuteProcess("git", "status -uno", log);
+            _filesChangedToTreeish = null;
         }
 
-        public void Status(StringBuilder output, out bool isBehind, out bool canFastForward)
+        public void Status(ILog log, out bool isBehind, out bool canFastForward)
         {
-            var outputStart = output.Length;
-            ExecuteProcess("git", "status -uno", output);
-            var statusOutput = output.ToString(outputStart, output.Length - outputStart);
+            var commandLog = new StringLog(log);
+            ExecuteProcess("git", "status -uno", commandLog);
+            var statusOutput = commandLog.Output;
             isBehind = statusOutput.Contains("Your branch is behind");
             canFastForward = statusOutput.Contains("can be fast-forwarded");
         }
 
-        public void Pull(StringBuilder output)
+        public void Diff(ILog log, string treeish, out string[] changes, bool echo = true)
         {
-            ExecuteProcess("git", "pull", output);
+            var commandLog = new StringLog(log);
+            ExecuteProcess("git", "diff --name-only " + treeish, commandLog, echo);
+            var output = commandLog.Output;
+            if (string.IsNullOrWhiteSpace(output))
+            {
+                changes = new string[0];
+            }
+            else
+            {
+                changes = output.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+            }
+        }
+
+        public void Pull(ILog log)
+        {
+            ExecuteProcess("git", "pull", log);
             _tags = null;
+            _filesChangedToTreeish = null;
+        }
+
+        public void Checkout(string branchOrTag, ILog log)
+        {
+            ExecuteProcess("git", "checkout " + branchOrTag, log);
+            _tags = null;
+            _filesChangedToTreeish = null;
         }
 
         public bool HasFile(string fileName)
@@ -209,27 +262,31 @@ namespace GitDeployHub.Web.Engine
             return Directory.Exists(Path.Combine(Folder, path));
         }
 
-        public void ExecuteIfExists(string fileName, string command, string arguments, StringBuilder output)
+        public void ExecuteIfExists(string fileName, string command, string arguments, ILog log)
         {
             if (!HasFile(fileName))
             {
-                output.AppendFormat("({0} not present)", fileName);
-                output.AppendLine();
+                log.Log(string.Format("({0} not present)", fileName));
                 return;
             }
-            ExecuteProcess(command, arguments, output);
+            ExecuteProcess(command, arguments, log);
         }
 
-        public void ExecutePreDeploy(StringBuilder output)
+        public void ExecutePreDeploy(ILog log)
         {
-            string fileName = "BuildScripts\\PreDeploy.ps1";
-            ExecuteIfExists(fileName, "powershell", fileName, output);
+            var fileName = "BuildScripts\\PreDeploy.ps1";
+            ExecuteIfExists(fileName, "powershell", fileName, log);
         }
 
-        public void ExecutePostDeploy(StringBuilder output)
+        public void ExecutePostDeploy(ILog log)
         {
-            string fileName = "BuildScripts\\PostDeploy.ps1";
-            ExecuteIfExists(fileName, "powershell", fileName, output);
+            var fileName = "BuildScripts\\PostDeploy.ps1";
+            ExecuteIfExists(fileName, "powershell", fileName, log);
+        }
+
+        internal void Log(string message, Process process)
+        {
+            Hub.Log(message, this, process);
         }
     }
 }

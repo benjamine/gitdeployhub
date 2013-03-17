@@ -13,7 +13,7 @@ namespace GitDeployHub.Web.Controllers
     {
         // POST /deployment/start/instance-name
         [AcceptVerbs("POST", "PUT")]
-        public ActionResult Start(string id, string source = null)
+        public ActionResult Start(string id, string source = null, bool dry = false)
         {
             var httpRequest = HttpContext.Request;
             var parameters = Request.QueryString.Cast<string>()
@@ -29,6 +29,7 @@ namespace GitDeployHub.Web.Controllers
             {
                 throw new HttpException(403, "Not Allowed");
             }
+            deployment.Dry = dry;
             deployment.ExecuteAsync();
             return Request.IsAjaxRequest() ? (ActionResult)Json("OK") : RedirectToAction("Index", "Home");
         }

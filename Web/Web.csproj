@@ -116,8 +116,12 @@
     <Compile Include="Engine\Config\GitDeployHub.cs" />
     <Compile Include="Engine\Config\InstanceCollection.cs" />
     <Compile Include="Engine\Config\InstanceElement.cs" />
+    <Compile Include="Engine\Processes\Fetch.cs" />
+    <Compile Include="Engine\ILog.cs" />
+    <Compile Include="Engine\StringLog.cs" />
+    <Compile Include="Engine\Process.cs" />
     <Compile Include="Engine\DateTimeFormatter.cs" />
-    <Compile Include="Engine\Deployment.cs" />
+    <Compile Include="Engine\Processes\Deployment.cs" />
     <Compile Include="Engine\Hub.cs" />
     <Compile Include="Engine\Instance.cs" />
     <Compile Include="Global.asax.cs">

@@ -7,14 +7,9 @@
 <h1>@ViewBag.Title</h1>
 
 <div>
-    <h2>Active</h2>
-    @if (Model.DeploymentQueue.Count == 0)
+    @if (Model.Queue.Count > 0)
     {
-        <summary>Empty</summary>
-    }
-    else
-    {
-                    
+        <h2>Active</h2>
         <table>
             <thead>
                 <tr>
@@ -27,15 +22,15 @@
             </thead>
             <tbody>
 
-                @foreach (var deployment in Model.DeploymentQueue.Reverse())
+                @foreach (var process in Model.Queue.Reverse())
                 {
-                    <tr class="@(deployment.Succeeded ? "succeeded" : "failed")">
-                        <td>@deployment.Instance.Name</td>
-                        <td>@deployment.Status</td>
-                        <td>@deployment.Started.ToString("s") (@DateTimeFormatter.TimeAgo(deployment.Started))</td>
+                    <tr class="@(process.Succeeded ? "succeeded" : "failed")">
+                        <td>@process.Instance.Name</td>
+                        <td>@process.Status</td>
+                        <td>@process.Started.ToString("s") (@DateTimeFormatter.TimeAgo(process.Started))</td>
                         <td>
                             <ul>
-                                @foreach (var param in deployment.Parameters)
+                                @foreach (var param in process.Parameters)
                                 {
                                     <li>
                                         <pre>@param.Key: @param.Value</pre>
@@ -44,7 +39,7 @@
                             </ul>
                         </td>
                         <td>
-                            <pre>@deployment.Log</pre>
+                            <pre>@process.FullLog</pre>
                         </td>
                     </tr>
                 }
@@ -54,7 +49,7 @@
 
 
     <h2>Instances</h2>
-    @if (Model.Instances.Count() == 0)
+    @if (!Model.Instances.Any())
     {
         <div>Empty</div>
     }
@@ -65,6 +60,8 @@
             <thead>
                 <tr>
                     <th>Instance</th>
+                    <th>Treeish</th>
+                    <th>Preview</th>
                     <th></th>
                     <th>Tags</th>
                     <th>Completed</th>
@@ -78,13 +75,29 @@
                 {
                     <tr class="@(instance.LastDeployment != null ? (instance.LastDeployment.Succeeded ? "succeeded" : "failed") : "unknown")">
                         <td>@instance.Name</td>
+                        <td>@instance.Treeish</td>
                         <td>
+                            <div title="Files that will change on next deploy. Click 'Update Preview' to refresh this list">
+                                @if (instance.FilesChangedToTreeish.Length < 1)
+                                {
+                                    <span>no changes</span>
+                                }
+                                else
+                                {
+                                    <pre>@string.Join("\n", instance.FilesChangedToTreeish)</pre>
+                                }
+                            </div>
+                        </td>
+                        <td>
+                            <form method="POST" action="@Url.Action("Start", "Deployment", new { id = instance.Name, source = "dashboard", dry = true })">
+                                <input type="submit" value="Update Preview" />
+                            </form>
                             <form method="POST" action="@Url.Action("Start", "Deployment", new { id = instance.Name, source = "dashboard" })">
                                 <input type="submit" value="Deploy Now" />
                             </form>
                         </td>
                         <td>
-                            <ul>
+                            <ul class="instance-tags">
                                 @foreach (var tag in instance.Tags)
                                 {
                                     <li>@tag</li>
@@ -108,7 +121,7 @@
                                 <pre>@(instance.LastDeployment.Succeeded ? "OK" : "ERROR: " + instance.LastDeployment.Exception.Message)</pre>
                             </td>
                             <td>
-                                <pre>@instance.LastDeployment.Log</pre>
+                                <pre>@instance.LastDeployment.FullLog</pre>
                             </td>
                         }
                         else
@@ -123,8 +136,8 @@
         </table>
     }
 
-    <h2>Recent Deployments</h2>
-    @if (Model.DeploymentHistory.Count == 0)
+    <h2>History</h2>
+    @if (Model.ProcessHistory.Count == 0)
     {
         <div>Empty</div>
     }
@@ -143,15 +156,15 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var deployment in Model.DeploymentHistory.Reverse())
+                @foreach (var process in Model.ProcessHistory.Reverse())
                 {
-                    <tr class="@(deployment.Succeeded ? "succeeded" : "failed")">
-                        <td>@deployment.Instance.Name</td>
-                        <td>@deployment.Status</td>
-                        <td>@deployment.Completed.ToString("s") (@DateTimeFormatter.TimeAgo(deployment.Completed))</td>
+                    <tr class="@(process.Succeeded ? "succeeded" : "failed")">
+                        <td>@process.Instance.Name</td>
+                        <td>@process.Status</td>
+                        <td>@process.Completed.ToString("s") (@DateTimeFormatter.TimeAgo(process.Completed))</td>
                         <td>
                             <ul>
-                                @foreach (var param in deployment.Parameters)
+                                @foreach (var param in process.Parameters)
                                 {
                                     <li>
                                         <pre>@param.Key: @param.Value</pre>
@@ -160,10 +173,10 @@
                             </ul>
                         </td>
                         <td>
-                            <pre>@(deployment.Succeeded ? "OK" : "ERROR: " + deployment.Exception.Message)</pre>
+                            <pre>@(process.Succeeded ? "OK" : "ERROR: " + process.Exception.Message)</pre>
                         </td>
                         <td>
-                            <pre>@deployment.Log</pre>
+                            <pre>@process.FullLog</pre>
                         </td>
                     </tr>
                 }

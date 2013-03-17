@@ -22,6 +22,13 @@ namespace GitDeployHub.Web.Engine.Config
             set { this["folder"] = value; }
         }
 
+        [ConfigurationProperty("treeish", DefaultValue = "origin/master")]
+        public string Treeish
+        {
+            get { return this["treeish"] as string; }
+            set { this["treeish"] = value; }
+        }
+
         [ConfigurationProperty("environmentVariables")]
         public string EnvironmentVariables
         {

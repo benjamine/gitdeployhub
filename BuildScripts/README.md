@@ -1,0 +1,1 @@
+PreDeploy.ps1 and PostDeploy.ps1 script can be saved at this folder

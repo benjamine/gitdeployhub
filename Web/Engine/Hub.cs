@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Web;
 using GitDeployHub.Web.Engine.Config;
@@ -28,7 +29,7 @@ namespace GitDeployHub.Web.Engine
         {
             foreach (var instanceConfig in Config.GitDeployHub.Settings.Instances.OfType<InstanceElement>())
             {
-                var instance = new Instance(this, instanceConfig.Name, instanceConfig.Folder);
+                var instance = new Instance(this, instanceConfig.Name, instanceConfig.Treeish, instanceConfig.Folder);
                 if (!string.IsNullOrWhiteSpace(instanceConfig.EnvironmentVariables))
                 {
                     foreach (var pair in instanceConfig.EnvironmentVariables
@@ -49,20 +50,22 @@ namespace GitDeployHub.Web.Engine
 
         #endregion
 
+        public static TraceSource TraceSource = new TraceSource("gitDeployHub", SourceLevels.All);
+
         private IDictionary<string, Instance> _instances = new Dictionary<string, Instance>();
 
-        private IList<Deployment> _deploymentQueue = new List<Deployment>();
+        private IList<Process> _queue = new List<Process>();
 
-        public IList<Deployment> DeploymentQueue
+        public IList<Process> Queue
         {
-            get { return _deploymentQueue; }
+            get { return _queue; }
         }
 
-        private IList<Deployment> _deploymentHistory = new List<Deployment>();
+        private IList<Process> _processHistory = new List<Process>();
 
-        public IList<Deployment> DeploymentHistory
+        public IList<Process> ProcessHistory
         {
-            get { return _deploymentHistory; }
+            get { return _processHistory; }
         }
 
         public IEnumerable<Instance> Instances
@@ -95,6 +98,11 @@ namespace GitDeployHub.Web.Engine
                 throw new Exception("Instance not found: " + name);
             }
             return instance;
+        }
+
+        internal static void Log(string message, Engine.Instance instance, Process process)
+        {
+            TraceSource.TraceInformation(message);
         }
     }
 }

@@ -81,6 +81,11 @@ tr:nth-child(even) {
     background-color: #eee;
 }
 
+.instance-tags {
+    font-size: large;
+    font-weight: bold;    
+}
+
 tr.failed {
     background-color: #e88;
 }
