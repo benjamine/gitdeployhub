@@ -72,10 +72,12 @@ namespace GitDeployHub.Web.Engine
                         }
                         else
                         {
-                            ExecuteProcess("git", "tag --contains HEAD", log, false);
-                            _tags = log.Output.Split(new[] { '\r', '\n' })
-                                          .Select(tag => tag.Trim())
-                                          .Where(tag => tag.Length > 0).ToArray();
+                            ExecuteProcess("git", "log -n1 --pretty=format:%d", log, false);
+                            _tags = log.Output.Trim(new[] { ' ', '(', ')', '\r', '\n' })
+                                       .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                       .Select(t => t.Trim())
+                                       .Where(t => t != "HEAD" && t != "master" && !t.StartsWith("origin/"))
+                                       .ToArray();
                         }
                     }
                     catch
