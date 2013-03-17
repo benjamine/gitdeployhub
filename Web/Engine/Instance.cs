@@ -229,7 +229,7 @@ namespace GitDeployHub.Web.Engine
         public void Diff(ILog log, string treeish, out string[] changes, bool echo = true)
         {
             var commandLog = new StringLog(log);
-            ExecuteProcess("git", "diff --name-only " + treeish, commandLog, echo);
+            ExecuteProcess("git", "diff --name-only HEAD.." + treeish, commandLog, echo);
             var output = commandLog.Output;
             if (string.IsNullOrWhiteSpace(output))
             {
