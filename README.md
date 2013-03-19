@@ -13,8 +13,10 @@ Installation
 -------------
 
 1. git clone this repository
-2. compile
-3. publish on IIS (on the machine were you want to do deployments)
-4. this site will need privileges to Write on his own folder, and run ```npm pull``` on your target folders.
+``` sh
+cd D:\Inetpub\wwwroot
+git clone git://github.com/benjamine/gitdeployhub.git
+```
+3. publish on IIS (eg. HomeDirectory= ```D:\Inetpub\wwwroot\gitdeployhub\Web\```)
+4. setup this site using .Net 4.0 and add Write permissions on his own folder, and on any other folder you want to deploy websites to.
 5. open the site homepage for instructions on adding deploy targets (instances).
-
