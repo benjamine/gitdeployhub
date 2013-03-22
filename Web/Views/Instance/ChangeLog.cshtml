@@ -1,0 +1,15 @@
+﻿@using MarkdownSharp
+@model Instance
+
+@{
+    ViewBag.Title = Model.Name + " ChangeLog";
+    var markdown = new MarkdownSharp.Markdown(new MarkdownOptions
+        {
+            AutoHyperlink = true,
+            AutoNewLines = true,
+        });
+}
+@Html.Raw(markdown.Transform(string.Join(Environment.NewLine, (ViewBag.ShortVersion ?? false) ? Model.ChangeLogShort : Model.ChangeLog)))
+<br />
+<br />
+@Html.ActionLink("Back", "Index", "Home")

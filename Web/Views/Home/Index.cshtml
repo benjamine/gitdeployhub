@@ -4,8 +4,6 @@
     ViewBag.Title = "Git Deploy Hub";
 }
 
-<h1>@ViewBag.Title</h1>
-
 <div>
     @if (Model.Queue.Count > 0)
     {
@@ -63,6 +61,7 @@
                     <th>Treeish</th>
                     <th>Preview</th>
                     <th></th>
+                    <th></th>
                     <th>Tags</th>
                     <th>Completed</th>
                     <th>Parameters</th>
@@ -87,6 +86,9 @@
                                     <pre>@string.Join("\n", instance.FilesChangedToTreeish)</pre>
                                 }
                             </div>
+                        </td>
+                        <td>
+                            @Html.ActionLink("ChangeLog", "ChangeLog", "Instance", new { id = instance.Name }, new { title = "ChangeLog of currently deployed version"})
                         </td>
                         <td>
                             <form method="POST" action="@Url.Action("Start", "Deployment", new { id = instance.Name, source = "dashboard", dry = true })">

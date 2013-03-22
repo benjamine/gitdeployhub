@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web;
+using GitDeployHub.Web.Engine.Notifiers;
 using GitDeployHub.Web.Engine.Processes;
 
 namespace GitDeployHub.Web.Engine
@@ -49,9 +51,7 @@ namespace GitDeployHub.Web.Engine
 
         public Deployment LastDeployment { get; set; }
 
-        public Deployment CurrentDeployment { get; set; }
-
-        public Process CurrentProcess { get; set; }
+        public BaseProcess CurrentProcess { get; set; }
 
         public Hub Hub { get; set; }
 
@@ -104,21 +104,57 @@ namespace GitDeployHub.Web.Engine
             }
         }
 
-        private string _trackedBranch;
+        private string[] _changeLog;
 
-        public string TrackedBranch
+        public string[] ChangeLog
         {
             get
             {
-                if (_trackedBranch == null)
+                if (_changeLog == null)
                 {
-                    var log = new StringLog();
-                    ExecuteProcess("git", "for-each-ref --format='%(upstream:short)' $(git symbolic-ref -q HEAD)", log, false);
-                    _trackedBranch = log.Output.Trim(new[] { ' ', '\t', '\r', '\n' });
+                    _changeLog = new[] { " *No ChangeLog Found*" };
+                    var changeLogFilenames = new[] { "CHANGELOG.md", "CHANGELOG.txt", "CHANGELOG" };
+                    foreach (var changeLogFilename in changeLogFilenames)
+                    {
+                        var fullName = Path.Combine(Folder, changeLogFilename);
+                        if (File.Exists(fullName))
+                        {
+                            _changeLog = File.ReadLines(fullName).ToArray();
+                        }
+                    }
                 }
-                return _trackedBranch;
+                return _changeLog;
             }
         }
+
+        /// <summary>
+        /// Get short version of ChangeLog
+        /// </summary>
+        public string[] ChangeLogShort
+        {
+            get
+            {
+                var changeLog = ChangeLog;
+                var versionsRemaining = 3;
+                var output = new List<string>();
+                var versionTitle = new Regex("^\\s*#*\\s*v?\\d+\\.\\d+", RegexOptions.Compiled);
+                foreach (var line in changeLog)
+                {
+                    if (versionTitle.IsMatch(line))
+                    {
+                        versionsRemaining--;
+                    }
+                    if (versionsRemaining < 0)
+                    {
+                        break;
+                    }
+                    output.Add(line);
+                }
+                return output.ToArray();
+            }
+        }
+
+        public Notifier[] Notifiers { get; set; }
 
         public Instance(Hub hub, string name, string treeish = null, string folder = null)
         {
@@ -209,12 +245,18 @@ namespace GitDeployHub.Web.Engine
             }
         }
 
+        private void FolderChanged()
+        {
+            _tags = null;
+            _changeLog = null;
+            _filesChangedToTreeish = null;
+        }
+
         public void Fetch(ILog log)
         {
             ExecuteProcess("git", "fetch", log);
             ExecuteProcess("git", "status -uno", log);
-            _tags = null;
-            _filesChangedToTreeish = null;
+            FolderChanged();
         }
 
         public void Status(ILog log, out bool isBehind, out bool canFastForward)
@@ -244,8 +286,7 @@ namespace GitDeployHub.Web.Engine
         public void Pull(ILog log)
         {
             ExecuteProcess("git", "pull", log);
-            _tags = null;
-            _filesChangedToTreeish = null;
+            FolderChanged();
         }
 
         public void Stash(ILog log)
@@ -256,8 +297,7 @@ namespace GitDeployHub.Web.Engine
         public void Checkout(string branchOrTag, ILog log)
         {
             ExecuteProcess("git", "checkout " + branchOrTag, log);
-            _tags = null;
-            _filesChangedToTreeish = null;
+            FolderChanged();
         }
 
         public bool HasFile(string fileName)
@@ -292,7 +332,7 @@ namespace GitDeployHub.Web.Engine
             ExecuteIfExists(fileName, "powershell", fileName, log);
         }
 
-        internal void Log(string message, Process process)
+        internal void Log(string message, BaseProcess process)
         {
             Hub.Log(message, this, process);
         }

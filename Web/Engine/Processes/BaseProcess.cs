@@ -4,14 +4,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web;
 using System.Web.Script.Serialization;
 
-namespace GitDeployHub.Web.Engine
+namespace GitDeployHub.Web.Engine.Processes
 {
-    public abstract class Process : ILog
+    public abstract class BaseProcess : ILog
     {
         public enum ProcessStatus
         {
@@ -61,7 +59,7 @@ namespace GitDeployHub.Web.Engine
 
         public string FullLog { get { return _log.Output; } }
 
-        public Process(Hub hub, Instance instance)
+        public BaseProcess(Hub hub, Instance instance)
         {
             Hub = hub;
             Instance = instance;
@@ -110,10 +108,18 @@ namespace GitDeployHub.Web.Engine
             }
             finally
             {
-                Completed = DateTime.UtcNow;
-                Log(string.Format("Completed ({0})", Completed - Started));
                 Status = ProcessStatus.Complete;
+                Completed = DateTime.UtcNow;
 
+                if (Instance.Notifiers != null)
+                {
+                    foreach (var notifier in Instance.Notifiers)
+                    {
+                        notifier.Notify(this);
+                    }
+                }
+
+                Log(string.Format("Completed ({0})", Completed - Started));
                 if (!Skipped)
                 {
                     Hub.ProcessHistory.Add(this);
@@ -135,7 +141,7 @@ namespace GitDeployHub.Web.Engine
         }
 
         protected abstract void DoExecute();
-        
+
         public void Log(string message)
         {
             _log.Log(message);

@@ -23,6 +23,7 @@ namespace GitDeployHub.Web.Engine.Processes
                     Instance.ExecutePostDeploy(this);
                     LogNewLine();
                     Log("Instance Deployed: " + Instance.Name);
+                    Instance.LastDeployment = this;
                 }
             }
             else

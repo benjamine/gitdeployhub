@@ -46,6 +46,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="MarkdownSharp">
+      <HintPath>..\packages\MarkdownSharp.1.13.0.0\lib\35\MarkdownSharp.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Data" />
@@ -113,13 +116,20 @@
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Controllers\DeploymentController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\InstanceController.cs" />
+    <Compile Include="Engine\Config\NotifierCollection.cs" />
+    <Compile Include="Engine\Config\SettingsCollection.cs" />
+    <Compile Include="Engine\Config\NotifierElement.cs" />
     <Compile Include="Engine\Config\GitDeployHub.cs" />
     <Compile Include="Engine\Config\InstanceCollection.cs" />
     <Compile Include="Engine\Config\InstanceElement.cs" />
+    <Compile Include="Engine\Notifiers\MailNotifier.cs" />
+    <Compile Include="Engine\Notifiers\HttpNotifier.cs" />
+    <Compile Include="Engine\Notifiers\Notifier.cs" />
     <Compile Include="Engine\Processes\Fetch.cs" />
     <Compile Include="Engine\ILog.cs" />
     <Compile Include="Engine\StringLog.cs" />
-    <Compile Include="Engine\Process.cs" />
+    <Compile Include="Engine\Processes\BaseProcess.cs" />
     <Compile Include="Engine\DateTimeFormatter.cs" />
     <Compile Include="Engine\Processes\Deployment.cs" />
     <Compile Include="Engine\Hub.cs" />
@@ -149,6 +159,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Views\Instance\ChangeLog.cshtml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

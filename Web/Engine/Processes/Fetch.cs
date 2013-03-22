@@ -4,7 +4,7 @@ using System.Web;
 
 namespace GitDeployHub.Web.Engine.Processes
 {
-    public class Fetch : Process
+    public class Fetch : BaseProcess
     {
         public Fetch(Hub hub, Instance instance)
             : base(hub, instance)

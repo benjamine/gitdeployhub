@@ -35,5 +35,14 @@ namespace GitDeployHub.Web.Engine.Config
             get { return this["environmentVariables"] as string; }
             set { this["environmentVariables"] = value; }
         }
+
+        [ConfigurationProperty("notifiers")]
+        public NotifierCollection Notifiers
+        {
+            get
+            {
+                return this["notifiers"] as NotifierCollection;
+            }
+        }
     }
 }

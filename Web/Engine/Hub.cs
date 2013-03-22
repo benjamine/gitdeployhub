@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Web;
 using GitDeployHub.Web.Engine.Config;
+using GitDeployHub.Web.Engine.Notifiers;
+using GitDeployHub.Web.Engine.Processes;
 
 namespace GitDeployHub.Web.Engine
 {
@@ -44,6 +46,18 @@ namespace GitDeployHub.Web.Engine
                         }
                     }
                 }
+                if (instanceConfig.Notifiers != null)
+                {
+                    instance.Notifiers = instanceConfig.Notifiers.OfType<NotifierElement>().Select(notifierConfig =>
+                        {
+                            var typeName = notifierConfig.Type.Substring(0, 1).ToUpperInvariant() + notifierConfig.Type.Substring(1).ToLowerInvariant();
+                            typeName = string.Format("GitDeployHub.Web.Engine.Notifiers.{0}Notifier", typeName);
+                            var notifier = (Notifier)Activator.CreateInstance(Type.GetType(typeName, true));
+                            notifier.Key = notifierConfig.Key;
+                            notifier.Settings = notifierConfig.Settings == null ? new Dictionary<string, string>() : notifierConfig.Settings.ToDictionary();
+                            return notifier;
+                        }).ToArray();
+                }
                 Register(instance);
             }
         }
@@ -54,16 +68,16 @@ namespace GitDeployHub.Web.Engine
 
         private IDictionary<string, Instance> _instances = new Dictionary<string, Instance>();
 
-        private IList<Process> _queue = new List<Process>();
+        private IList<BaseProcess> _queue = new List<BaseProcess>();
 
-        public IList<Process> Queue
+        public IList<BaseProcess> Queue
         {
             get { return _queue; }
         }
 
-        private IList<Process> _processHistory = new List<Process>();
+        private IList<BaseProcess> _processHistory = new List<BaseProcess>();
 
-        public IList<Process> ProcessHistory
+        public IList<BaseProcess> ProcessHistory
         {
             get { return _processHistory; }
         }
@@ -100,7 +114,7 @@ namespace GitDeployHub.Web.Engine
             return instance;
         }
 
-        internal static void Log(string message, Engine.Instance instance, Process process)
+        internal static void Log(string message, Instance instance, BaseProcess process)
         {
             TraceSource.TraceInformation(message);
         }

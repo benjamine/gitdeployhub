@@ -7,8 +7,8 @@
     <link href='@Url.Content("~/Content/Site.css")' type="text/css" rel="stylesheet"/>
 </head>
 <body>
+    <h1>@ViewBag.Title</h1>
     @RenderBody()
-
     @RenderSection("scripts", required: false)
 </body>
 </html>
