@@ -78,6 +78,7 @@ namespace GitDeployHub.Web.Engine.Notifiers
                     {"instanceName", () => process.InstanceName},
                     {"result", () => process.Skipped ? "skipped" : (process.Succeeded ? "OK" : "failed")},
                     {"tags", () => string.Join(",", process.Instance.Tags)},
+                    {"log", () => process.FullLog },
                     {"changeLog", () => string.Join(Environment.NewLine, process.Instance.ChangeLog)},
                     {"changeLogShort", () => string.Join(Environment.NewLine, process.Instance.ChangeLogShort)},
                     {"treeish", () => process.Instance.Treeish},

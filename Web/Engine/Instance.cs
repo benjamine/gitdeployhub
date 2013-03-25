@@ -252,9 +252,13 @@ namespace GitDeployHub.Web.Engine
             _filesChangedToTreeish = null;
         }
 
-        public void Fetch(ILog log)
+        public void Fetch(ILog log, bool fetchTags = true)
         {
             ExecuteProcess("git", "fetch", log);
+            if (fetchTags)
+            {
+                ExecuteProcess("git", "fetch --tags", log);
+            }
             ExecuteProcess("git", "status -uno", log);
             FolderChanged();
         }
