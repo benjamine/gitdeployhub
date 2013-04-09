@@ -1,5 +1,9 @@
 # GitDeployHub ChangeLog 
 
+## v1.0.14
+
+- http notifier with custom body
+
 ## v1.0.12
 
 - notifiers
