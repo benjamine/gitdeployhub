@@ -83,7 +83,7 @@ namespace GitDeployHub.Web.Engine.Notifiers
                     {"changeLogShort", () => string.Join(Environment.NewLine, process.Instance.ChangeLogShort)},
                     {"treeish", () => process.Instance.Treeish},
                     {"machineName", () => Environment.MachineName},
-                });
+                }, valueEncoder);
         }
 
     }

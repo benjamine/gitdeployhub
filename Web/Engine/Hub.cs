@@ -66,7 +66,7 @@ namespace GitDeployHub.Web.Engine
 
         public static TraceSource TraceSource = new TraceSource("gitDeployHub", SourceLevels.All);
 
-        private IDictionary<string, Instance> _instances = new Dictionary<string, Instance>();
+        private readonly IDictionary<string, Instance> _instances = new Dictionary<string, Instance>(StringComparer.InvariantCultureIgnoreCase);
 
         private IList<BaseProcess> _queue = new List<BaseProcess>();
 
