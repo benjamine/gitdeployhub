@@ -206,8 +206,8 @@
     &lt;!-- allow deployments to be requested from localhost, and from github webhook servers --&gt;
     &lt;gitDeployHub allowedAddresses="192.168.*.*;127.0.0.1;::1; 207.97.227.253, 50.57.128.197, 108.171.174.178, 50.57.231.61, 54.235.183.49, 54.235.183.23, 54.235.118.251, 54.235.120.57, 54.235.120.61, 54.235.120.62"&gt;
         &lt;instances&gt;
-            &lt;!-- folder is optional if location is ~\..\&lt;name&gt; --&gt;
-            &lt;instance name="MyWebsite" folder="c:\InetPub\wwwroot\Path\To\MyWebsite" /&gt;
+            &lt;!-- folder is optional if location is ~\..\..\&lt;name&gt; --&gt;
+            &lt;instance name="MyWebsite" folder="c:\InetPub\wwwroot\Path\To\MyWebsite" treeish="tagOrBranchNameToCheckout" /&gt;
             &lt;instance name="AnotherWebsite" /&gt;
         &lt;/instances&gt;
     &lt;/gitDeployHub&gt;

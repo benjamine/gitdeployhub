@@ -81,6 +81,7 @@ namespace GitDeployHub.Web.Engine.Notifiers
                     {"log", () => process.FullLog },
                     {"changeLog", () => string.Join(Environment.NewLine, process.Instance.ChangeLog)},
                     {"changeLogShort", () => string.Join(Environment.NewLine, process.Instance.ChangeLogShort)},
+                    {"changeLogLast", () => string.Join(Environment.NewLine, process.Instance.ChangeLogLast)},
                     {"treeish", () => process.Instance.Treeish},
                     {"machineName", () => Environment.MachineName},
                 }, valueEncoder);

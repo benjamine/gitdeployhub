@@ -98,7 +98,14 @@ namespace GitDeployHub.Web.Engine
                 if (_filesChangedToTreeish == null)
                 {
                     var log = new StringLog();
-                    Diff(log, Treeish, out _filesChangedToTreeish, false);
+                    try
+                    {
+                        Diff(log, Treeish, out _filesChangedToTreeish, false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _filesChangedToTreeish = new[] { "<error getting diff: " + ex.Message + ">" };
+                    }
                 }
                 return _filesChangedToTreeish;
             }
@@ -149,6 +156,38 @@ namespace GitDeployHub.Web.Engine
                         break;
                     }
                     output.Add(line);
+                }
+                return output.ToArray();
+            }
+        }
+
+        /// <summary>
+        /// Get only last version in ChangeLog
+        /// </summary>
+        public string[] ChangeLogLast
+        {
+            get
+            {
+                var changeLog = ChangeLog;
+                var versionsRemaining = 1;
+                var output = new List<string>();
+                var versionTitle = new Regex("^\\s*#*\\s*v?\\d+\\.\\d+", RegexOptions.Compiled);
+                var onHeader = true;
+                foreach (var line in changeLog)
+                {
+                    if (versionTitle.IsMatch(line))
+                    {
+                        onHeader = false;
+                        versionsRemaining--;
+                    }
+                    if (versionsRemaining < 0)
+                    {
+                        break;
+                    }
+                    if (!onHeader)
+                    {
+                        output.Add(line);
+                    }
                 }
                 return output.ToArray();
             }

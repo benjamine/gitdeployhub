@@ -1,5 +1,10 @@
 # GitDeployHub ChangeLog 
 
+## v1.0.15
+
+- instance info api
+- better error handling for git diff
+
 ## v1.0.14
 
 - http notifier with custom body
