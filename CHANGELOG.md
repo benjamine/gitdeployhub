@@ -1,5 +1,9 @@
 # GitDeployHub ChangeLog 
 
+## v1.0.16
+
+- running smoke tests
+
 ## v1.0.15
 
 - instance info api
