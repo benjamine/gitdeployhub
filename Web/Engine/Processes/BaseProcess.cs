@@ -4,7 +4,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 using System.Web.Script.Serialization;
 
 namespace GitDeployHub.Web.Engine.Processes
@@ -153,5 +155,39 @@ namespace GitDeployHub.Web.Engine.Processes
             _log.LogNewLine();
             Instance.Log("", this);
         }
+
+        public bool IsAllowed(HttpContextBase context)
+        {
+            var allowedAddresses = Config.GitDeployHub.Settings.AllowedAddresses ?? "";
+            if (string.IsNullOrWhiteSpace(allowedAddresses) || allowedAddresses.ToLowerInvariant() == "none")
+            {
+                return false;
+            }
+            var method = context.Request.HttpMethod.ToUpperInvariant();
+            if (method != "POST" && method != "PUT")
+            {
+                return false;
+            }
+            var allowed = false;
+            var requestAddress = context.Request.UserHostAddress ?? "null";
+            foreach (var address in allowedAddresses.Split(new[] { ',', ';', ' ' }))
+            {
+                if (!string.IsNullOrWhiteSpace(address))
+                {
+                    if (address == "*")
+                    {
+                        return true;
+                    }
+                    var regex = new Regex("^" + address.Replace(".", "\\.").Replace("*", "\\d+") + "$");
+                    if (regex.IsMatch(requestAddress))
+                    {
+                        allowed = true;
+                        break;
+                    }
+                }
+            }
+            return allowed;
+        }
+
     }
 }

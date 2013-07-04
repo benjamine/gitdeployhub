@@ -1,1 +1,1 @@
-PreDeploy.ps1 and PostDeploy.ps1 script can be saved at this folder
+PreDeploy.ps1, PostDeploy.ps1 and SmokeTest.ps1 files can be saved at this folder

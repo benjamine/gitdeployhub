@@ -33,5 +33,27 @@ namespace GitDeployHub.Web.Controllers
             deployment.ExecuteAsync();
             return Request.IsAjaxRequest() ? (ActionResult)Json("OK") : RedirectToAction("Index", "Home");
         }
+
+        // POST /deployment/smoketest/instance-name
+        [AcceptVerbs("POST", "PUT")]
+        public ActionResult SmokeTest(string id, string source = null)
+        {
+            var httpRequest = HttpContext.Request;
+            var parameters = Request.QueryString.Cast<string>()
+                .Select(name => new { Name = name, Value = Request.QueryString[name] })
+                .ToDictionary(p => p.Name, p => p.Value);
+
+            parameters["Address"] = httpRequest.UserHostAddress;
+            parameters["UserAgent"] = httpRequest.UserAgent;
+
+            var instance = Hub.Instance.GetInstance(id);
+            var smokeTest = instance.CreateSmokeTest(parameters);
+            if (!smokeTest.IsAllowed(HttpContext))
+            {
+                throw new HttpException(403, "Not Allowed");
+            }
+            smokeTest.ExecuteAsync();
+            return Request.IsAjaxRequest() ? (ActionResult)Json("OK") : RedirectToAction("Index", "Home");
+        }
     }
 }

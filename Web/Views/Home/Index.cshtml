@@ -1,4 +1,5 @@
-﻿@model Hub
+﻿@using GitDeployHub.Web.Engine.Processes
+@model Hub
 
 @{
     ViewBag.Title = "Git Deploy Hub";
@@ -97,21 +98,30 @@
                             <form method="POST" action="@Url.Action("Start", "Deployment", new { id = instance.Name, source = "dashboard" })">
                                 <input type="submit" value="Deploy Now" />
                             </form>
+                            @if (instance.HasSmokeTest && !(instance.LastDeployment != null && !instance.LastDeployment.Succeeded))
+                            {
+                            <form method="POST" action="@Url.Action("SmokeTest", "Deployment", new { id = instance.Name, source = "dashboard" })">
+                                <input type="submit" value="Smoke Test" />
+                            </form>
+                            }
                         </td>
-                        <td>
-                            <ul class="instance-tags">
-                                @foreach (var tag in instance.Tags)
-                                {
-                                    <li>@tag</li>
-                                }
-                            </ul>
-                        </td>
-                        @if (instance.LastDeployment != null)
+                    <td>
+                        <ul class="instance-tags">
+                            @foreach (var tag in instance.Tags)
+                            {
+                                <li>@tag</li>
+                            }
+                        </ul>
+                    </td>
+                    @{
+                        var lastProcess = instance.LastSmokeTest != null && (instance.LastDeployment == null || instance.LastDeployment.Succeeded) ? instance.LastSmokeTest : (BaseProcess)instance.LastDeployment;
+                    }
+                    @if (lastProcess != null)
                         {
-                            <td>@instance.LastDeployment.Completed.ToString("s")  (@DateTimeFormatter.TimeAgo(instance.LastDeployment.Completed))</td>
+                            <td>@lastProcess.Completed.ToString("s")  (@DateTimeFormatter.TimeAgo(lastProcess.Completed))</td>
                             <td>
                                 <ul>
-                                    @foreach (var param in instance.LastDeployment.Parameters)
+                                    @foreach (var param in lastProcess.Parameters)
                                     {
                                         <li>
                                             <pre>@param.Key: @param.Value</pre>
@@ -120,10 +130,10 @@
                                 </ul>
                             </td>
                             <td>
-                                <pre>@(instance.LastDeployment.Succeeded ? "OK" : "ERROR: " + instance.LastDeployment.Exception.Message)</pre>
+                                <pre>@((lastProcess.Succeeded ? "OK" : "ERROR: " + lastProcess.Exception.Message) + (lastProcess is SmokeTest ? "\n(smoke tested)" : ""))</pre>
                             </td>
                             <td>
-                                <pre>@instance.LastDeployment.FullLog</pre>
+                                <pre>@lastProcess.FullLog</pre>
                             </td>
                         }
                         else

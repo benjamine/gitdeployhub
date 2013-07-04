@@ -46,7 +46,20 @@ namespace GitDeployHub.Web.Controllers
                                 TypeFullName = instance.LastDeployment.Exception.GetType().FullName,
                                 StackTrace = instance.LastDeployment.ExceptionStackTrace,
                             },
-                    }
+                    },
+                    LastSmokeTest = instance.LastSmokeTest == null ? null : new
+                    {
+                        instance.LastSmokeTest.Status,
+                        instance.LastSmokeTest.Succeeded,
+                        instance.LastSmokeTest.Created,
+                        instance.LastSmokeTest.Completed,
+                        Exception = instance.LastSmokeTest.Exception == null ? null : new
+                        {
+                            instance.LastSmokeTest.Exception.Message,
+                            TypeFullName = instance.LastSmokeTest.Exception.GetType().FullName,
+                            StackTrace = instance.LastSmokeTest.ExceptionStackTrace,
+                        },
+                    },
                 };
             return Json(status, JsonRequestBehavior.AllowGet);
         }

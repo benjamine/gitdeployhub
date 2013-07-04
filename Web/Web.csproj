@@ -126,6 +126,7 @@
     <Compile Include="Engine\Notifiers\MailNotifier.cs" />
     <Compile Include="Engine\Notifiers\HttpNotifier.cs" />
     <Compile Include="Engine\Notifiers\Notifier.cs" />
+    <Compile Include="Engine\Processes\SmokeTest.cs" />
     <Compile Include="Engine\Processes\Fetch.cs" />
     <Compile Include="Engine\ILog.cs" />
     <Compile Include="Engine\StringLog.cs" />

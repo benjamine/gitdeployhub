@@ -51,6 +51,8 @@ namespace GitDeployHub.Web.Engine
 
         public Deployment LastDeployment { get; set; }
 
+        public SmokeTest LastSmokeTest { get; set; }
+
         public BaseProcess CurrentProcess { get; set; }
 
         public Hub Hub { get; set; }
@@ -193,6 +195,20 @@ namespace GitDeployHub.Web.Engine
             }
         }
 
+        private bool? _hasSmokeTest;
+
+        public bool HasSmokeTest
+        {
+            get
+            {
+                if (_hasSmokeTest == null)
+                {
+                    _hasSmokeTest = HasFile("BuildScripts\\SmokeTest.ps1");
+                }
+                return _hasSmokeTest ?? false;
+            }
+        }
+
         public Notifier[] Notifiers { get; set; }
 
         public Instance(Hub hub, string name, string treeish = null, string folder = null)
@@ -236,6 +252,16 @@ namespace GitDeployHub.Web.Engine
             };
             Hub.Queue.Add(deployment);
             return deployment;
+        }
+
+        public SmokeTest CreateSmokeTest(IDictionary<string, string> parameters = null)
+        {
+            var smokeTest = new SmokeTest(Hub, this)
+            {
+                Parameters = parameters
+            };
+            Hub.Queue.Add(smokeTest);
+            return smokeTest;
         }
 
         public void ExecuteProcess(string command, string arguments, ILog log, bool echo = true)
@@ -289,6 +315,8 @@ namespace GitDeployHub.Web.Engine
             _tags = null;
             _changeLog = null;
             _filesChangedToTreeish = null;
+            _hasSmokeTest = null;
+            LastSmokeTest = null;
         }
 
         public void Fetch(ILog log, bool fetchTags = true)
@@ -375,9 +403,16 @@ namespace GitDeployHub.Web.Engine
             ExecuteIfExists(fileName, "powershell", fileName, log);
         }
 
+        public void ExecuteSmokeTest(ILog log)
+        {
+            var fileName = "BuildScripts\\SmokeTest.ps1";
+            ExecuteIfExists(fileName, "powershell", fileName, log);
+        }
+
         internal void Log(string message, BaseProcess process)
         {
             Hub.Log(message, this, process);
         }
+
     }
 }
